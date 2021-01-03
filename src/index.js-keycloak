@@ -1,0 +1,75 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import './index.scss';
+// import './styles/_min.css';
+// import './styles/sidebar.css';
+import './fontawesome-free-5.12.0-web/css/regular.min.css'
+// import './styles/min.scss';
+// import './styles/colors.css';
+
+import { App } from './App';
+// import * as serviceWorker from './serviceWorker';
+import { configureStore } from './state';
+import * as Keycloak from 'keycloak-js'
+
+
+//keycloak init options
+let initOptions = {
+    url: process.env.REACT_APP_KEYCLOAK_URL,
+    realm: process.env.REACT_APP_KEYCLOAK_REALM,
+    clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID,
+    onLoad: 'login-required'
+}
+
+
+let keycloak = Keycloak(initOptions);
+
+const store = configureStore();
+
+
+window.store = store;
+
+keycloak.init({ onLoad: initOptions.onLoad }).then((auth) => {
+
+    if (!auth) {
+        window.location.reload();
+    } else {
+        console.info("Authenticated");
+    }
+
+    localStorage.setItem("react-token", keycloak.token);
+    localStorage.setItem("react-refresh-token", keycloak.refreshToken);
+
+    //React Render
+    ReactDOM.render(   
+        <Provider store={store}>
+            <App />
+        </Provider>, 
+        document.getElementById('root')
+    );
+
+    setTimeout(() => {
+        keycloak.updateToken(70).then((refreshed) => {
+            if (refreshed) {
+                console.debug('Token refreshed' + refreshed);
+            } else {
+                console.warn('Token not refreshed, valid for '
+                    + Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds');
+            }
+        }).catch(() => {
+            console.error('Failed to refresh token');
+        });
+
+
+    }, 60000)
+
+}).catch(() => {
+    console.error("Authenticated Failed");
+});
+
+
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below. Note this comes with some pitfalls.
+// Learn more about service workers: https://bit.ly/CRA-PWA
+// serviceWorker.unregister();

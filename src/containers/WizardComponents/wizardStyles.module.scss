@@ -1,0 +1,11 @@
+@import "node_modules/bootstrap/scss/bootstrap";
+
+div.wizardContent {
+  @extend .container-md;
+  @extend .pt-3;
+}
+
+div.wizardControl {
+  @extend .container-sm;
+  @extend .pt-3;
+}
